@@ -1,7 +1,6 @@
 import os
 from selenium import webdriver
 import time
-from threading import Thread
 from bs4 import BeautifulSoup as BS
 from send_to_bd import send
 
@@ -11,14 +10,14 @@ class parse_twitter_account(object):
     driver: webdriver
     last_tweets = set()
     first_parse = False
+    chromedriver = '/home/mark/Desktop/git/tweet/chromedriver'
 
     def __init__(self, URL):
         self.URL = URL
-        chromedriver = '/home/mark/Desktop/git/tweet/chromedriver'
-        os.environ['webdriver.chrome.driver'] = chromedriver
+        os.environ['webdriver.chrome.driver'] = self.chromedriver
 
-        self.driver = webdriver.Chrome(chromedriver)
-        self.driver.get(URL)
+        #self.driver = webdriver.Chrome(chromedriver)
+        #self.driver.get(URL)
         # self.scroll_to_end()
 
     def scroll_to_cnt(self, cnt=10 ** 10):
@@ -36,14 +35,22 @@ class parse_twitter_account(object):
             k += 1
 
     def parse1(self):
+        self.driver = webdriver.Chrome(self.chromedriver)
+        self.driver.get(self.URL)
+
         time.sleep(3)
-        # Make it is main method
-        self.scroll_to_cnt()
+        self.first_parse = True # debug
+        if not self.first_parse:
+            self.first_parse = True
+            self.first_parse_fun()
+            return
+
+        self.scroll_to_cnt(5)
         html = self.driver.page_source
         soup = BS(html, 'html.parser')
 
-        tweets = soup.findAll( #It don`t find tweets
-            'div.css-901oao.r-18jsvk2.r-1qd0xha.r-a023e6.r-16dba41.r-ad9z0x.r-bcqeeo.r-bnwqim.r-qvutc0')
+        tweets = soup.find_all('div', {'class': ['css-901oao', 'r-18jsvk2', 'r-1qd0xha', 'r-a023e6', 'r-16dba41',
+                                                 'r-ad9z0x', 'r-bcqeeo', 'r-bnwqim', 'r-qvutc0']})
         with open('output.txt', 'w') as file:
             # file.write(soup.prettify())
             for tweet in tweets:
@@ -59,7 +66,24 @@ class parse_twitter_account(object):
 
         self.send([text])
 
+    def parse_part(self):
+        new_tweets = []
+        ls = self.driver.find_elements_by_css_selector(
+            'div.css-901oao.r-18jsvk2.r-1qd0xha.r-a023e6.r-16dba41.r-ad9z0x.r-bcqeeo'
+            '.r-bnwqim.r-qvutc0')
+        ls = list([l.text for l in ls])
+        for text in ls:
+            if text not in self.last_tweets:
+                new_tweets.append(text)
+                self.last_tweets.add(text)
+            else:
+                return [True, new_tweets]
+        return [False, new_tweets]
+
     def parse2(self):
+        self.driver = webdriver.Chrome(self.chromedriver)
+        self.driver.get(self.URL)
+
         time.sleep(3)
 
         if not self.first_parse:
@@ -67,22 +91,14 @@ class parse_twitter_account(object):
             self.first_parse_fun()
             return
 
-        new_tweets = []
+        match, new_tweets = self.parse_part()
 
         len_of_page = self.driver.execute_script(
             "window.scrollTo(0, document.body.scrollHeight);var lenOfPage=document.body.scrollHeight;return lenOfPage;")
-        match = False
 
         while match == False:
             time.sleep(3)
-            ls = self.driver.find_elements_by_css_selector(
-                'div.css-901oao.r-18jsvk2.r-1qd0xha.r-a023e6.r-16dba41.r-ad9z0x.r-bcqeeo'
-                '.r-bnwqim.r-qvutc0')
-            for l in ls:
-                text = l.text
-                if text not in self.last_tweets:
-                    new_tweets.append(text)
-                    self.last_tweets.add(text)
+            match, new_tweets = self.parse_part()
 
             last_count = len_of_page
             time.sleep(3)
@@ -92,22 +108,7 @@ class parse_twitter_account(object):
                 match = True
 
         self.send(new_tweets)
+        self.driver.quit()
 
     def send(self, tweets):
         send(tweets)
-
-
-
-def main():
-    pta0 = parse_twitter_account('https://twitter.com/_Kill_13')
-    # pta1 = parse_twitter_account('https://twitter.com/Plzsenpailovem1')
-
-    th0 = Thread(target=pta0.parse2, args=())
-    th0.start()
-
-    # th1 = Thread(target=pta1.parse2, args=())
-    # th1.start()
-
-
-if __name__ == '__main__':
-    main()
