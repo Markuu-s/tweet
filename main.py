@@ -10,7 +10,7 @@ def main():
     while k > 0:
         print(k, ' start')
 
-        pta0.parse2()
+        pta0.parse()
         #th0 = Thread(target=pta0.parse2, args=())
         #th0.start()
 
