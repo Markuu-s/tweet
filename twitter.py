@@ -8,11 +8,18 @@ class parse_twitter_account(object):
     driver: webdriver
     last_tweets = set()
     first_parse = False
-    chromedriver = '/home/mark/Desktop/git/tweet/chromedriver'
+    #chromedriver = '/home/mark/Desktop/git/tweet/chromedriver'
+    #chromedriver = '/usr/src/app/chromedriver' # for docker
 
     def __init__(self, URL):
         self.URL = URL
-        os.environ['webdriver.chrome.driver'] = self.chromedriver
+        chrome_options = webdriver.ChromeOptions()
+        chrome_options.add_argument('--no-sandbox')
+        chrome_options.add_argument('--window-size=1420,1080')
+        chrome_options.add_argument('--headless')
+        chrome_options.add_argument('--disable-gpu')
+        self.driver = webdriver.Chrome('/usr/src/bin/chromedriver', chrome_options=chrome_options)
+        #os.environ['webdriver.chrome.driver'] = self.chromedriver
 
     def scroll_to_cnt(self, cnt=10 ** 10):
         lenOfPage = self.driver.execute_script(
@@ -33,8 +40,11 @@ class parse_twitter_account(object):
             'div.css-901oao.r-18jsvk2.r-1qd0xha.r-a023e6.r-16dba41.r-ad9z0x.r-bcqeeo'
             '.r-bnwqim.r-qvutc0')
 
-        text = ls[0].text
-        self.last_tweets.add(text)
+        try:
+            text = ls[0].text
+            self.last_tweets.add(text)
+        except IndexError:
+            text = 'Warning: Profile is blocked/frozen or has no tweets or doesn`t exist'
 
         return [text]
 
@@ -53,7 +63,6 @@ class parse_twitter_account(object):
         return [False, new_tweets]
 
     def parse(self):
-        self.driver = webdriver.Chrome(self.chromedriver)
         self.driver.get(self.URL)
 
         time.sleep(3)
