@@ -4,7 +4,8 @@ RUN mkdir -p /usr/src/app/
 WORKDIR /usr/src/app/
 
 COPY twitter.py /usr/src/app/
-COPY bot.py /usr/src/app/
+#COPY bot.py /usr/src/app/
+COPY test.py /usr/src/app/
 #COPY requirements.txt /usr/src/app/
 #COPY chromedriver /usr/src/app/
 
@@ -27,4 +28,4 @@ RUN unzip /tmp/chromedriver.zip chromedriver -d /usr/src/bin/
 # set display port to avoid crash
 ENV DISPLAY=:99
 
-CMD ["python", "bot.py"]
+CMD ["python", "test.py"]

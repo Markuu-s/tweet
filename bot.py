@@ -4,9 +4,6 @@ import time
 
 
 def send(bot, tweets, ID_USER):
-    if tweets is None:
-        tweets = ['Check']
-
     for tweet in tweets:
         bot.send_message(ID_USER, tweet)
 
