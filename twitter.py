@@ -2,12 +2,15 @@ import os
 from selenium import webdriver
 import time
 
+
 class parse_twitter_account(object):
     URL: str
     driver: webdriver
     last_tweets = set()
     first_parse = False
     chromedriver: str
+    const_pin_tweet = '@' * 1000
+    pin_tweet_str = const_pin_tweet
 
     def __init__(self, URL):
         self.URL = URL
@@ -16,8 +19,9 @@ class parse_twitter_account(object):
         chrome_options.add_argument('--window-size=1420,1080')
         chrome_options.add_argument('--headless')
         chrome_options.add_argument('--disable-gpu')
-        #self.chromedriver = '/home/mark/Desktop/git/tweet/chromedriver'  # for me
-        self.chromedriver = '/usr/src/bin/chromedriver' # for docker
+        chrome_options.add_argument('--disable-dev-shm-usage')
+        # self.chromedriver = '/home/mark/Desktop/git/tweet/chromedriver'  # for me
+        self.chromedriver = '/usr/src/bin/chromedriver'  # for docker
         self.driver = webdriver.Chrome(self.chromedriver, chrome_options=chrome_options)
         os.environ['webdriver.chrome.driver'] = self.chromedriver
 
@@ -28,7 +32,10 @@ class parse_twitter_account(object):
 
         try:
             ls = list([l.text for l in ls])
-            text = ls[0]  # .text
+            k = 0
+            if ls[0] == self.pin_tweet_str:
+                k += 1
+            text = ls[k]  # .text
             self.last_tweets.add(text)
         except IndexError:
             text = 'Warning: Profile is blocked/frozen or has no tweets or doesn`t exist'
@@ -42,12 +49,28 @@ class parse_twitter_account(object):
             '.r-bnwqim.r-qvutc0')
         ls = list([l.text for l in ls])
         for text in ls:
+            if text == self.pin_tweet_str:
+                continue
+
             if text not in self.last_tweets:
                 new_tweets.append(text)
                 self.last_tweets.add(text)
             else:
                 return [True, new_tweets]
         return [False, new_tweets]
+
+    def pin_tweet(self): # Return True / False
+        ls = self.driver.find_elements_by_css_selector(
+            'div.css-901oao.css-cens5h.r-m0bqgq.r-1qd0xha.r-n6v787.r-b88u0q.r-1sf4r6n'
+            '.r-bcqeeo.r-qvutc0'
+        )
+        if (len(ls) != 0):
+            ls = self.driver.find_elements_by_css_selector(
+                'div.css-901oao.r-18jsvk2.r-1qd0xha.r-a023e6.r-16dba41.r-ad9z0x.r-bcqeeo'
+                '.r-bnwqim.r-qvutc0')
+            self.pin_tweet_str = ls[0].text
+        #print(self.pin_tweet_str)
+
 
     def parse(self):
 
@@ -56,12 +79,15 @@ class parse_twitter_account(object):
         if not self.first_parse:
             self.driver.get(self.URL)
             time.sleep(5)
-
+            self.pin_tweet()
             self.first_parse = True
             return self._first_parse_fun()
         else:
             # Refresh page to get new tweets
+            #try:
             self.driver.refresh()
+            #except
+
             time.sleep(5)
 
         # match == True, if page is not end
@@ -86,3 +112,12 @@ class parse_twitter_account(object):
         # self.driver.close()
         # self.driver.quit()
         return new_tweets[::-1]
+
+
+class _tweet_acc:
+    data: str
+    time: str
+    id: str  # maybe hash data + time
+    media: []
+    type: str  # pin tweet or just tweet
+    # how to parse emoji ??
