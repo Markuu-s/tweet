@@ -3,12 +3,15 @@ from selenium import webdriver
 import time
 
 
-class parse_twitter_account(object):
+class ParseTwitterAccount(object):
     URL: str
+    time_sleep = 8
     driver: webdriver
     last_tweets = set()
     first_parse = False
     chromedriver: str
+    CssSelectorForTweets = 'div.css-901oao.r-18jsvk2.r-1qd0xha.r-a023e6.r-16dba41.r-ad9z0x.r-bcqeeo.r-bnwqim.r-qvutc0'
+    CssSelectorForPin = 'div.css-901oao.css-cens5h.r-m0bqgq.r-1qd0xha.r-n6v787.r-b88u0q.r-1sf4r6n.r-bcqeeo.r-qvutc0'
     const_pin_tweet = '@' * 1000
     pin_tweet_str = const_pin_tweet
 
@@ -26,28 +29,24 @@ class parse_twitter_account(object):
         os.environ['webdriver.chrome.driver'] = self.chromedriver
 
     def _first_parse_fun(self):
-        ls = self.driver.find_elements_by_css_selector(
-            'div.css-901oao.r-18jsvk2.r-1qd0xha.r-a023e6.r-16dba41.r-ad9z0x.r-bcqeeo'
-            '.r-bnwqim.r-qvutc0')
+        ls = self.driver.find_elements_by_css_selector(self.CssSelectorForTweets)
 
         try:
-            ls = list([l.text for l in ls])
+            ls = list([tx.text for tx in ls])
             k = 0
             if ls[0] == self.pin_tweet_str:
                 k += 1
             text = ls[k]  # .text
             self.last_tweets.add(text)
         except IndexError:
-            text = 'Warning: Profile is blocked/frozen or has no tweets or doesn`t exist'
+            text = 'Warning: Profile is blocked/frozen or has no tweets or does`t exist'
 
         return [text]
 
     def parse_part(self):
         new_tweets = []
-        ls = self.driver.find_elements_by_css_selector(
-            'div.css-901oao.r-18jsvk2.r-1qd0xha.r-a023e6.r-16dba41.r-ad9z0x.r-bcqeeo'
-            '.r-bnwqim.r-qvutc0')
-        ls = list([l.text for l in ls])
+        ls = self.driver.find_elements_by_css_selector(self.CssSelectorForTweets)
+        ls = list([tx.text for tx in ls])
         for text in ls:
             if text == self.pin_tweet_str:
                 continue
@@ -59,36 +58,30 @@ class parse_twitter_account(object):
                 return [True, new_tweets]
         return [False, new_tweets]
 
-    def pin_tweet(self): # Return True / False
-        ls = self.driver.find_elements_by_css_selector(
-            'div.css-901oao.css-cens5h.r-m0bqgq.r-1qd0xha.r-n6v787.r-b88u0q.r-1sf4r6n'
-            '.r-bcqeeo.r-qvutc0'
-        )
-        if (len(ls) != 0):
-            ls = self.driver.find_elements_by_css_selector(
-                'div.css-901oao.r-18jsvk2.r-1qd0xha.r-a023e6.r-16dba41.r-ad9z0x.r-bcqeeo'
-                '.r-bnwqim.r-qvutc0')
+    def pin_tweet(self):      # Return True / False
+        ls = self.driver.find_elements_by_css_selector(self.CssSelectorForPin)
+        if len(ls) != 0:
+            ls = self.driver.find_elements_by_css_selector(self.CssSelectorForTweets)
             self.pin_tweet_str = ls[0].text
-        #print(self.pin_tweet_str)
-
+        # print(self.pin_tweet_str)
 
     def parse(self):
 
-        # If it`s first time, when we parse twet
+        # If it`s first time, when we parse tweet
         # We start parse with last tweet and later
         if not self.first_parse:
             self.driver.get(self.URL)
-            time.sleep(5)
+            time.sleep(self.time_sleep)
             self.pin_tweet()
             self.first_parse = True
             return self._first_parse_fun()
         else:
             # Refresh page to get new tweets
-            #try:
+            # try:
             self.driver.refresh()
-            #except
+            # except
 
-            time.sleep(5)
+            time.sleep(self.time_sleep)
 
         # match == True, if page is not end
         # or match == True, if not found all tweets
@@ -97,15 +90,16 @@ class parse_twitter_account(object):
         len_of_page = self.driver.execute_script(
             "window.scrollTo(0, document.body.scrollHeight);var lenOfPage=document.body.scrollHeight;return lenOfPage;")
 
-        while match == False:
-            time.sleep(3)
+        while not match:
+            time.sleep(self.time_sleep)
             match, temp = self.parse_part()
             new_tweets.append(temp)
 
             last_count = len_of_page
-            time.sleep(3)
+            time.sleep(self.time_sleep)
             len_of_page = self.driver.execute_script(
-                "window.scrollTo(0, document.body.scrollHeight);var lenOfPage=document.body.scrollHeight;return lenOfPage;")
+                "window.scrollTo(0, document.body.scrollHeight);var lenOfPage=document.body.scrollHeight;return "
+                "lenOfPage;")
             if last_count == len_of_page:
                 match = True
 
@@ -114,7 +108,7 @@ class parse_twitter_account(object):
         return new_tweets[::-1]
 
 
-class _tweet_acc:
+class _TweetAcc:
     data: str
     time: str
     id: str  # maybe hash data + time

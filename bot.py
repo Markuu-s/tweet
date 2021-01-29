@@ -1,5 +1,5 @@
 import telebot
-from twitter import parse_twitter_account
+from twitter import ParseTwitterAccount
 import time
 
 
@@ -14,7 +14,7 @@ def add_twitter(message):
     bot.send_message(message.chat.id, 'Add a link to twitter account')
     @bot.message_handler(content_types=['text'])
     def adding(message1):
-        pta0 = parse_twitter_account(message1.text)
+        pta0 = ParseTwitterAccount(message1.text)
         while 1:
             send(bot, pta0.parse(), message1.chat.id)
             time.sleep(60 * 1)
