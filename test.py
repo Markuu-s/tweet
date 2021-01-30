@@ -21,7 +21,7 @@ users = [
     'https://twitter.com/SkyNews',
     'https://twitter.com/ABC'
 ]
-
+#users = ['https://twitter.com/MultiFeed2']
 for user in users:
     threading.Thread(target=inf_parse, args=(user, )).start()
     time.sleep(30)

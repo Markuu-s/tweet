@@ -1,7 +1,7 @@
 import os
 from selenium import webdriver
 import time
-
+import re
 
 class ParseTwitterAccount(object):
     URL: str
@@ -28,6 +28,14 @@ class ParseTwitterAccount(object):
         self.driver = webdriver.Chrome(self.chromedriver, chrome_options=chrome_options)
         os.environ['webdriver.chrome.driver'] = self.chromedriver
 
+    def _format_text(self, text):
+        results = re.findall(r'\n[@]\w*\n', text)
+        for result in results:
+            text = text.replace(result, result[1:len(result) - 1])
+
+        #print(text)
+        return text
+
     def _first_parse_fun(self):
         ls = self.driver.find_elements_by_css_selector(self.CssSelectorForTweets)
 
@@ -36,7 +44,7 @@ class ParseTwitterAccount(object):
             k = 0
             if ls[0] == self.pin_tweet_str:
                 k += 1
-            text = ls[k]  # .text
+            text = self._format_text(ls[k])  # .text
             self.last_tweets.add(text)
         except IndexError:
             text = 'Warning: Profile is blocked/frozen or has no tweets or does`t exist'
@@ -46,7 +54,7 @@ class ParseTwitterAccount(object):
     def parse_part(self):
         new_tweets = []
         ls = self.driver.find_elements_by_css_selector(self.CssSelectorForTweets)
-        ls = list([tx.text for tx in ls])
+        ls = list([self._format_text(tx.text) for tx in ls])
         for text in ls:
             if text == self.pin_tweet_str:
                 continue
@@ -58,11 +66,11 @@ class ParseTwitterAccount(object):
                 return [True, new_tweets]
         return [False, new_tweets]
 
-    def pin_tweet(self):      # Return True / False
+    def _pin_tweet(self):      # Return True / False
         ls = self.driver.find_elements_by_css_selector(self.CssSelectorForPin)
         if len(ls) != 0:
             ls = self.driver.find_elements_by_css_selector(self.CssSelectorForTweets)
-            self.pin_tweet_str = ls[0].text
+            self.pin_tweet_str = self._format_text(ls[0].text)
         # print(self.pin_tweet_str)
 
     def parse(self):
@@ -72,7 +80,7 @@ class ParseTwitterAccount(object):
         if not self.first_parse:
             self.driver.get(self.URL)
             time.sleep(self.time_sleep)
-            self.pin_tweet()
+            self._pin_tweet()
             self.first_parse = True
             return self._first_parse_fun()
         else:
@@ -115,3 +123,7 @@ class _TweetAcc:
     media: []
     type: str  # pin tweet or just tweet
     # how to parse emoji ??
+
+def main():
+    ParseTwitterAccount('')
+main()
